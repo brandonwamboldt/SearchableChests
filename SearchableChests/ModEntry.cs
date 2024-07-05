@@ -110,6 +110,7 @@ namespace SearchableChests
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 name: () => "Search X Offset",
+                tooltip: () => "The horizontal offset of the searchbar in pixels (from center)",
                 getValue: () => Config.FilterOffsetX,
                 setValue: value => Config.FilterOffsetX = value
             );
@@ -117,6 +118,7 @@ namespace SearchableChests
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 name: () => "Search Y Offset",
+                tooltip: () => "The vertical offset of the searchbar in pixels",
                 getValue: () => Config.FilterOffsetY,
                 setValue: value => Config.FilterOffsetY = value
             );
@@ -124,10 +126,27 @@ namespace SearchableChests
             configMenu.AddNumberOption(
                 mod: ModManifest,
                 name: () => "Search Bar Width",
+                tooltip: () => "The width of the search bar relative to the open page (as a percentage)",
                 min: 0,
                 max: 200,
                 getValue: () => Config.FilterWidth,
                 setValue: value => Config.FilterWidth = value
+            );
+
+            configMenu.AddBoolOption(
+                mod: ModManifest,
+                name: () => "Search Bar Autofocus",
+                tooltip: () => "If enabled, automatically focus the search bar if you start typing",
+                getValue: () => Config.FilterAutoFocus,
+                setValue: value => Config.FilterAutoFocus = value
+            );
+
+            configMenu.AddKeybind(
+                mod: ModManifest,
+                name: () => "Focus Keybind",
+                tooltip: () => "A keybind that will set focus to the search bar",
+                getValue: () => Config.FilterFocusKeybind,
+                setValue: value => Config.FilterFocusKeybind = value
             );
         }
 
@@ -145,27 +164,35 @@ namespace SearchableChests
             filterField.Value.Selected = false;
         }
 
-        public static bool ItemGrabMenu_receiveKeyPress_Prefix(GameMenu __instance, Keys key)
+        public static bool ItemGrabMenu_receiveKeyPress_Prefix(IClickableMenu __instance, Keys key)
         {
             if (key == Keys.Escape)
             {
                 lastFilterString.Value = "";
                 filterField.Value.Selected = false;
-                return true;
             }
             else if (key == Keys.E && !filterField.Value.Selected)
             {
                 lastFilterString.Value = "";
                 filterField.Value.Selected = false;
-                return true;
-            } 
-            else if (!filterField.Value.Selected && key != Keys.Back)
+            }
+            else if (!filterField.Value.Selected && Config.FilterAutoFocus && ((key >= Keys.A && key <= Keys.Z) || (key >= Keys.D0 && key <= Keys.D9) || (key >= Keys.NumPad0 && key <= Keys.NumPad9)))
             {
                 filterField.Value.Selected = true;
-                filterField.Value.Text += key.ToString();
+                filterField.Value.Text += key.ToString().Substring(key.ToString().Length - 1).ToLower();
+                return false;
+            }
+            else if (!filterField.Value.Selected && Config.FilterFocusKeybind == key.ToSButton())
+            {
+                filterField.Value.Selected = true;
+                return false;
+            }
+            else if (filterField.Value.Selected)
+            {
+                return false;
             }
 
-            return false;
+            return true;
         }
 
         public static void MenuWithInventory_readyToClose_Postfix(IClickableMenu __instance, ref bool __result)
@@ -255,21 +282,29 @@ namespace SearchableChests
             {
                 lastFilterString.Value = "";
                 filterField.Value.Selected = false;
-                return true;
             }
             else if (key == Keys.E && !filterField.Value.Selected)
             {
                 lastFilterString.Value = "";
                 filterField.Value.Selected = false;
-                return true;
             }
-            else if (!filterField.Value.Selected && key != Keys.Back)
+            else if (!filterField.Value.Selected && Config.FilterAutoFocus && ((key >= Keys.A && key <= Keys.Z) || (key >= Keys.D0 && key <= Keys.D9) || (key >= Keys.NumPad0 && key <= Keys.NumPad9)))
             {
                 filterField.Value.Selected = true;
-                filterField.Value.Text += key.ToString();
+                filterField.Value.Text += key.ToString().Substring(key.ToString().Length - 1).ToLower();
+                return false;
+            }
+            else if (!filterField.Value.Selected && Config.FilterFocusKeybind == key.ToSButton())
+            {
+                filterField.Value.Selected = true;
+                return false;
+            }
+            else if (filterField.Value.Selected)
+            {
+                return false;
             }
 
-            return false;
+            return true;
         }
 
         public static bool ShopMenu_receiveLeftClick_Prefix(ShopMenu __instance, int x, int y, bool playSound = true)
